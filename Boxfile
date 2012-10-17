@@ -17,6 +17,7 @@ web1:
     - mcrypt
     - eaccelerator
     - redis
+    - curl
   before_deploy:
     - "php artisan migrate:install"
     - "php artisan migrate"
