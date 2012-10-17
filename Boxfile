@@ -16,7 +16,7 @@ web1:
     - pdo_mysql
     - mcrypt
     - eaccelerator
-    - memcached
+    - redis
   before_deploy:
     - "php artisan migrate:install"
     - "php artisan migrate"

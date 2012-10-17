@@ -36,5 +36,5 @@
 return array(
 
 	'docs' => array('handles' => 'docs'),
-
+    'recurly' => array('auto'=>true)
 );

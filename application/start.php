@@ -60,6 +60,8 @@ Laravel\Autoloader::$aliases = $aliases;
 
 Autoloader::map(array(
 	'Base_Controller' => path('app').'controllers/base.php',
+	'Referral' => path('app') . 'models/referrals.php',
+	'Notification' => path('app') . 'models/notifications.php',
 ));
 
 /*
