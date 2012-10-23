@@ -175,6 +175,15 @@ Route::post('recurly-notification',function(){
 		$r->transaction_date = $notification->transaction->date;
 		$r->save();
 	}
+	else if($notification->type == 'successful_refund_notification')
+	{
+	}
+	else if($notification->type == 'failed_payment_notification')
+	{
+	}
+	else if($notification->type == 'void_payment_notification')
+	{
+	}
 	else if($notification->type == 'new_subscription_notification')
 	{
 		$sub = new SubscriptionHistory;
@@ -183,11 +192,12 @@ Route::post('recurly-notification',function(){
 		//TODO: add expected revenue using the current period ends_at date
 		$sub->account_code = $notification->account->account_code;
 		$sub->type = 'new';
+		$sub->uuid = $notification->subscription->uuid;
 		$sub->amount = $notification->subscription->total_amount_in_cents / 100.00;
 		$sub->quantity = $notification->subscription->quantity;
 		$sub->activity_date = $notification->subscription->activated_at;
 		$sub->plan_code = $notification->subscription->plan->plan_code;
-		$sub->plan_name =$notification->subscription->plan->plan_name;
+		$sub->plan_name =$notification->subscription->plan->name;
 		$sub->save();
 
 	}
@@ -202,22 +212,8 @@ Route::post('recurly-notification',function(){
 		$sub->quantity = $notification->subscription->quantity;
 		$sub->activity_date = $notification->subscription->current_period_started_at;
 		$sub->plan_code = $notification->subscription->plan->plan_code;
-		$sub->plan_name =$notification->subscription->plan->plan_name;
+		$sub->plan_name =$notification->subscription->plan->name;
 		$sub->save();
-	}
-	else if($notification->type == 'reactivated_account_notification')
-	{
-		//TODO: add expected revenue using the current period ends_at date
-		$s = SubscriptionHistory::where('uuid','=',$notification->subscription->uuid)->where("type",'=','canceled')->first();
-		if($s != null)
-		{
-			$s->type = "reactivated_cancel";
-			$s->save();
-		}
-		else
-		{
-			//TODO: only possible scenario is that the canceled not failed to be received first, doubtful
-		}
 	}
 	else if($notification->type == 'renewed_subscription_notification')
 	{
@@ -230,7 +226,7 @@ Route::post('recurly-notification',function(){
 		$sub->quantity = $notification->subscription->quantity;
 		$sub->activity_date = $notification->subscription->current_period_started_at;
 		$sub->plan_code = $notification->subscription->plan->plan_code;
-		$sub->plan_name =$notification->subscription->plan->plan_name;
+		$sub->plan_name =$notification->subscription->plan->name;
 		$sub->save();
 
 	}
@@ -245,7 +241,7 @@ Route::post('recurly-notification',function(){
 		$sub->quantity = $notification->subscription->quantity;
 		$sub->activity_date = $notification->subscription->canceled_at;
 		$sub->plan_code = $notification->subscription->plan->plan_code;
-		$sub->plan_name =$notification->subscription->plan->plan_name;
+		$sub->plan_name =$notification->subscription->plan->name;
 		$sub->save();
 	}
 	else if($notification->type == 'expired_subscription_notification')
@@ -258,7 +254,7 @@ Route::post('recurly-notification',function(){
 		$sub->quantity = $notification->subscription->quantity;
 		$sub->activity_date = $notification->subscription->expired_at;
 		$sub->plan_code = $notification->subscription->plan->plan_code;
-		$sub->plan_name =$notification->subscription->plan->plan_name;
+		$sub->plan_name =$notification->subscription->plan->name;
 		$sub->save();
 
 		//if cancel is not saved, save as cancel
@@ -274,17 +270,33 @@ Route::post('recurly-notification',function(){
 			$sub->quantity = $notification->subscription->quantity;
 			$sub->activity_date = $notification->subscription->canceled_at;
 			$sub->plan_code = $notification->subscription->plan->plan_code;
-			$sub->plan_name =$notification->subscription->plan->plan_name;
+			$sub->plan_name =$notification->subscription->plan->name;
 			$sub->save();
 		}
 	}
-	else if($notification->type == 'successful_refund_notification')
+	else if($notification->type == 'new_account_notification')
 	{
-		//
+		//important to note that if the account is reopened a new account notification is sent
 	}
-	else if($notification->type == 'void_payment_notification')
+	else if($notification->type == 'billing_info_updated_notification')
 	{
-		//
+	}
+	else if($notification->type == 'closed_account_notification')
+	{
+	}
+	else if($notification->type == 'reactivated_account_notification')
+	{
+		//TODO: add expected revenue using the current period ends_at date
+		$s = SubscriptionHistory::where('uuid','=',$notification->subscription->uuid)->where("type",'=','canceled')->first();
+		if($s != null)
+		{
+			$s->type = "reactivated_cancel";
+			$s->save();
+		}
+		else
+		{
+			//TODO: only possible scenario is that the canceled not failed to be received first, doubtful
+		}
 	}
 });
 
