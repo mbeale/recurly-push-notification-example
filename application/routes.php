@@ -125,6 +125,10 @@ Route::post('recurly-notification',function(){
 	//need to handle 
 	$post_xml = file_get_contents ("php://input");
 	$notification = new Recurly_PushNotification($post_xml);
+	$raw = new RawNotification;
+	$raw->type = $notification->type;
+	$raw->xml = $post_xml;
+	$raw->save();
 	if($notification->type == 'successful_payment_notification')
 	{
 		//check if need to have sent commission event
@@ -173,6 +177,7 @@ Route::post('recurly-notification',function(){
 		$r->subscription_id = $notification->transaction->subscription_id;
 		$r->amount = $notification->transaction->amount_in_cents / 100.00;
 		$r->transaction_date = $notification->transaction->date;
+		$r->notification_reference = $raw->id;
 		$r->save();
 	}
 	else if($notification->type == 'successful_refund_notification')
@@ -198,6 +203,7 @@ Route::post('recurly-notification',function(){
 		$sub->activity_date = $notification->subscription->activated_at;
 		$sub->plan_code = $notification->subscription->plan->plan_code;
 		$sub->plan_name =$notification->subscription->plan->name;
+		$sub->notification_reference = $raw->id;
 		$sub->save();
 
 	}
@@ -213,6 +219,7 @@ Route::post('recurly-notification',function(){
 		$sub->activity_date = $notification->subscription->current_period_started_at;
 		$sub->plan_code = $notification->subscription->plan->plan_code;
 		$sub->plan_name =$notification->subscription->plan->name;
+		$sub->notification_reference = $raw->id;
 		$sub->save();
 	}
 	else if($notification->type == 'renewed_subscription_notification')
@@ -227,6 +234,7 @@ Route::post('recurly-notification',function(){
 		$sub->activity_date = $notification->subscription->current_period_started_at;
 		$sub->plan_code = $notification->subscription->plan->plan_code;
 		$sub->plan_name =$notification->subscription->plan->name;
+		$sub->notification_reference = $raw->id;
 		$sub->save();
 
 	}
@@ -242,6 +250,7 @@ Route::post('recurly-notification',function(){
 		$sub->activity_date = $notification->subscription->canceled_at;
 		$sub->plan_code = $notification->subscription->plan->plan_code;
 		$sub->plan_name =$notification->subscription->plan->name;
+		$sub->notification_reference = $raw->id;
 		$sub->save();
 	}
 	else if($notification->type == 'expired_subscription_notification')
@@ -252,14 +261,15 @@ Route::post('recurly-notification',function(){
 		$sub->uuid = $notification->subscription->uuid;
 		$sub->amount = $notification->subscription->total_amount_in_cents / 100.00;
 		$sub->quantity = $notification->subscription->quantity;
-		$sub->activity_date = $notification->subscription->expired_at;
+		$sub->activity_date = $notification->subscription->expires_at;
 		$sub->plan_code = $notification->subscription->plan->plan_code;
 		$sub->plan_name =$notification->subscription->plan->name;
+		$sub->notification_reference = $raw->id;
 		$sub->save();
 
 		//if cancel is not saved, save as cancel
 		$sh = SubscriptionHistory::where('uuid','=',$notification->subscription->uuid)->where("type",'=','canceled')->first();
-		if($sh != null)
+		if($sh == null)
 		{
 			//TODO: remove from expected revenue
 			$sub = new SubscriptionHistory;
@@ -271,6 +281,7 @@ Route::post('recurly-notification',function(){
 			$sub->activity_date = $notification->subscription->canceled_at;
 			$sub->plan_code = $notification->subscription->plan->plan_code;
 			$sub->plan_name =$notification->subscription->plan->name;
+			$sub->notification_reference = $raw->id;
 			$sub->save();
 		}
 	}
@@ -291,6 +302,7 @@ Route::post('recurly-notification',function(){
 		if($s != null)
 		{
 			$s->type = "reactivated_cancel";
+			$sub->notification_reference = $raw->id;
 			$s->save();
 		}
 		else

@@ -62,7 +62,7 @@ Autoloader::map(array(
 	'Base_Controller' => path('app').'controllers/base.php',
 	'Referral' => path('app') . 'models/referrals.php',
 	'Revenue' => path('app') . 'models/revenues.php',
-	//'Signup' => path('app') . 'models/signups.php',
+	'RawNotification' => path('app') . 'models/raw_notifications.php',
 	'SubscriptionHistory' => path('app') . 'models/subscription_history.php',
 	'Notification' => path('app') . 'models/notifications.php',
 ));
