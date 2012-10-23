@@ -34,7 +34,47 @@
 
 Route::get('/', function()
 {
-	return View::make('home.index');
+	Asset::add('bootstrapcss', 'css/bootstrap.min.css');
+	Asset::add('maincss', 'css/main.css');
+	Asset::add('bsjs', 'js/bootstrap.min.js');
+	Asset::add('jquery','js/jquery-min.js');
+	//get stats
+	$today = date('Y-m-d');
+	$thisweeknum = date('W');
+	$thismonthstart = date('Y-m-01');
+	$thismonthend = date('Y-m-t');
+
+	//find the start of week
+	$wkday = date('l');
+    switch($wkday) {
+        case 'Monday': $numDaysToMon = 0; break;
+        case 'Tuesday': $numDaysToMon = 1; break;
+        case 'Wednesday': $numDaysToMon = 2; break;
+        case 'Thursday': $numDaysToMon = 3; break;
+        case 'Friday': $numDaysToMon = 4; break;
+        case 'Saturday': $numDaysToMon = 5; break;
+        case 'Sunday': $numDaysToMon = 6; break;   
+    }
+    $monday = date('Y-m-d',mktime('0','0','0', date('m'), date('d')-$numDaysToMon, date('Y')));
+    //signup queries
+	$signups_today = SubscriptionHistory::where('type','=','new')->where('activity_date','>=',$today)->count();	
+	$signups_this_month = SubscriptionHistory::where('type','=','new')->where('activity_date','>=',$thismonthstart)->where('activity_date','<=',$thismonthend)->count();	
+	$signups_this_week = SubscriptionHistory::where('type','=','new')->where('activity_date','>=',$monday)->count();	
+	//cancellations
+	$cancelations_today = SubscriptionHistory::where('type','=','canceled')->where('activity_date','>=',$today)->count();	
+	$cancelations_this_month = SubscriptionHistory::where('type','=','canceled')->where('activity_date','>=',$thismonthstart)->where('activity_date','<=',$thismonthend)->count();	
+	$cancelations_this_week = SubscriptionHistory::where('type','=','canceled')->where('activity_date','>=',$monday)->count();	
+	//revenue
+	//subtract refunds
+	return View::make('dashboard.dashboard', array(
+		'su_today'=>$signups_today,
+		'su_month' => $signups_this_month,
+		'su_week' => $signups_this_week,
+		'c_today'=>$cancelations_today,
+		'c_month' => $cancelations_this_month,
+		'c_week' => $cancelations_this_week,
+		)
+	);
 });
 
 Route::post('confirm/(:any?)', function($referrer = ''){
@@ -87,6 +127,7 @@ Route::post('recurly-notification',function(){
 	$notification = new Recurly_PushNotification($post_xml);
 	if($notification->type == 'successful_payment_notification')
 	{
+		//check if need to have sent commission event
 		if($notification->transaction->subscription_id != '' && $notification->transaction->subscription_id != null)
 		{
 			$r = Referral::where('uuid', '=', $notification->transaction->subscription_id)->first();
@@ -123,6 +164,127 @@ Route::post('recurly-notification',function(){
 				curl_close($curl_handle);  
 			}
 		}
+		//add to revenue stats
+		$r = new Revenue;
+		$r->account_code = $notification->account->account_code;
+		$r->uuid = $notification->transaction->id;
+		$r->invoice_id = $notification->transaction->invoice_id;
+		$r->invoice_number = $notification->transaction->invoice_number;
+		$r->subscription_id = $notification->transaction->subscription_id;
+		$r->amount = $notification->transaction->amount_in_cents / 100.00;
+		$r->transaction_date = $notification->transaction->date;
+		$r->save();
+	}
+	else if($notification->type == 'new_subscription_notification')
+	{
+		$sub = new SubscriptionHistory;
+		//TODO: Flag if inserted with trial
+		//TODO: Load add ons for parsing
+		//TODO: add expected revenue using the current period ends_at date
+		$sub->account_code = $notification->account->account_code;
+		$sub->type = 'new';
+		$sub->amount = $notification->subscription->total_amount_in_cents / 100.00;
+		$sub->quantity = $notification->subscription->quantity;
+		$sub->activity_date = $notification->subscription->activated_at;
+		$sub->plan_code = $notification->subscription->plan->plan_code;
+		$sub->plan_name =$notification->subscription->plan->plan_name;
+		$sub->save();
+
+	}
+	else if($notification->type == 'updated_subscription_notification')
+	{
+		//TODO: add expected revenue using the current period ends_at date
+		$sub = new SubscriptionHistory;
+		$sub->type = 'updated';
+		$sub->account_code = $notification->account->account_code;
+		$sub->uuid = $notification->subscription->uuid;
+		$sub->amount = $notification->subscription->total_amount_in_cents / 100.00;
+		$sub->quantity = $notification->subscription->quantity;
+		$sub->activity_date = $notification->subscription->current_period_started_at;
+		$sub->plan_code = $notification->subscription->plan->plan_code;
+		$sub->plan_name =$notification->subscription->plan->plan_name;
+		$sub->save();
+	}
+	else if($notification->type == 'reactivated_account_notification')
+	{
+		//TODO: add expected revenue using the current period ends_at date
+		$s = SubscriptionHistory::where('uuid','=',$notification->subscription->uuid)->where("type",'=','canceled')->first();
+		if($s != null)
+		{
+			$s->type = "reactivated_cancel";
+			$s->save();
+		}
+		else
+		{
+			//TODO: only possible scenario is that the canceled not failed to be received first, doubtful
+		}
+	}
+	else if($notification->type == 'renewed_subscription_notification')
+	{
+		//TODO: add expected revenue using the current period ends_at date
+		$sub = new SubscriptionHistory;
+		$sub->type = 'renewal';
+		$sub->account_code = $notification->account->account_code;
+		$sub->uuid = $notification->subscription->uuid;
+		$sub->amount = $notification->subscription->total_amount_in_cents / 100.00;
+		$sub->quantity = $notification->subscription->quantity;
+		$sub->activity_date = $notification->subscription->current_period_started_at;
+		$sub->plan_code = $notification->subscription->plan->plan_code;
+		$sub->plan_name =$notification->subscription->plan->plan_name;
+		$sub->save();
+
+	}
+	else if($notification->type == 'canceled_subscription_notification')
+	{
+		//TODO: remove from expected revenue
+		$sub = new SubscriptionHistory;
+		$sub->type = 'canceled';
+		$sub->account_code = $notification->account->account_code;
+		$sub->uuid = $notification->subscription->uuid;
+		$sub->amount = $notification->subscription->total_amount_in_cents / 100.00;
+		$sub->quantity = $notification->subscription->quantity;
+		$sub->activity_date = $notification->subscription->canceled_at;
+		$sub->plan_code = $notification->subscription->plan->plan_code;
+		$sub->plan_name =$notification->subscription->plan->plan_name;
+		$sub->save();
+	}
+	else if($notification->type == 'expired_subscription_notification')
+	{
+		$sub = new SubscriptionHistory;
+		$sub->type = 'expire';
+		$sub->account_code = $notification->account->account_code;
+		$sub->uuid = $notification->subscription->uuid;
+		$sub->amount = $notification->subscription->total_amount_in_cents / 100.00;
+		$sub->quantity = $notification->subscription->quantity;
+		$sub->activity_date = $notification->subscription->expired_at;
+		$sub->plan_code = $notification->subscription->plan->plan_code;
+		$sub->plan_name =$notification->subscription->plan->plan_name;
+		$sub->save();
+
+		//if cancel is not saved, save as cancel
+		$sh = SubscriptionHistory::where('uuid','=',$notification->subscription->uuid)->where("type",'=','canceled')->first();
+		if($sh != null)
+		{
+			//TODO: remove from expected revenue
+			$sub = new SubscriptionHistory;
+			$sub->type = 'canceled';
+			$sub->account_code = $notification->account->account_code;
+			$sub->uuid = $notification->subscription->uuid;
+			$sub->amount = $notification->subscription->total_amount_in_cents / 100.00;
+			$sub->quantity = $notification->subscription->quantity;
+			$sub->activity_date = $notification->subscription->canceled_at;
+			$sub->plan_code = $notification->subscription->plan->plan_code;
+			$sub->plan_name =$notification->subscription->plan->plan_name;
+			$sub->save();
+		}
+	}
+	else if($notification->type == 'successful_refund_notification')
+	{
+		//
+	}
+	else if($notification->type == 'void_payment_notification')
+	{
+		//
 	}
 });
 
@@ -140,6 +302,7 @@ Route::get('signup', function(){
 	$signature = Recurly_js::sign(array('account'=>array('account_code'=>'referral_' . rand()),'subscription' => array('plan_code' => 'instant','currency'=>'USD')));
 	return View::make('recurly.signup')->with('signature',$signature)->with('referrer',$referrer);
 });
+
 /*
 |--------------------------------------------------------------------------
 | Application 404 & 500 Error Handlers
@@ -164,7 +327,10 @@ Event::listen('500', function()
 {
 	return Response::error('500');
 });
-
+// Event::listen('laravel.query', function($sql, $bindings, $time) {
+// 	echo "sql:$sql bindings:";
+// 	var_dump($bindings);
+// });
 /*
 |--------------------------------------------------------------------------
 | Route Filters
