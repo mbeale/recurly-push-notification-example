@@ -65,11 +65,30 @@ Route::get('/', function()
 	$cancelations_this_month = SubscriptionHistory::where('type','=','canceled')->where('activity_date','>=',$thismonthstart)->where('activity_date','<=',$thismonthend)->count();	
 	$cancelations_this_week = SubscriptionHistory::where('type','=','canceled')->where('activity_date','>=',$monday)->count();	
 	//revenue
+	$revenue_today = Revenue::where('transaction_date','>=',$today)->sum('amount');	
+	$revenue_this_month = Revenue::where('transaction_date','>=',$thismonthstart)->where('transaction_date','<=',$thismonthend)->sum('amount');	
+	$revenue_this_week = Revenue::where('transaction_date','>=',$monday)->sum('amount');	
+	//check revenue for null values
+	if($revenue_this_month == null)
+	{
+		$revenue_this_month = 0;
+	}
+	if($revenue_this_week == null)
+	{
+		$revenue_this_week = 0;
+	}
+	if($revenue_today == null)
+	{
+		$revenue_today = 0;
+	}
 	//subtract refunds
 	return View::make('dashboard.dashboard', array(
 		'su_today'=>$signups_today,
 		'su_month' => $signups_this_month,
 		'su_week' => $signups_this_week,
+		'r_today'=>$revenue_today,
+		'r_month' => $revenue_this_month,
+		'r_week' => $revenue_this_week,
 		'c_today'=>$cancelations_today,
 		'c_month' => $cancelations_this_month,
 		'c_week' => $cancelations_this_week,
@@ -182,6 +201,16 @@ Route::post('recurly-notification',function(){
 	}
 	else if($notification->type == 'successful_refund_notification')
 	{
+		$r = new Revenue;
+		$r->account_code = $notification->account->account_code;
+		$r->uuid = $notification->transaction->id;
+		$r->invoice_id = $notification->transaction->invoice_id;
+		$r->invoice_number = $notification->transaction->invoice_number;
+		$r->subscription_id = $notification->transaction->subscription_id;
+		$r->amount = ($notification->transaction->amount_in_cents / 100.00) * -1;
+		$r->transaction_date = $notification->transaction->date;
+		$r->notification_reference = $raw->id;
+		$r->save();
 	}
 	else if($notification->type == 'failed_payment_notification')
 	{

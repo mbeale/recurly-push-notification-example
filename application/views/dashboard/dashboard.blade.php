@@ -24,12 +24,12 @@
 				<td><span class="dmetric">{{$c_week}}</span></td>
 				<td><span class="dmetric">{{$c_month}}</span></td>
 			</tr>	
-<!-- 			<tr>
+			<tr>
 				<td>Revenue</td>
-				<td><span class="dmetric">$400</span></td>
-				<td><span class="dmetric">$4000</span></td>
-				<td><span class="dmetric">$40000</span></td>
+				<td><span class="dmetric">{{$r_today}}</span></td>
+				<td><span class="dmetric">{{$r_week}}</span></td>
+				<td><span class="dmetric">{{$r_month}}</span></td>
 			</tr>	
- -->		</tbody>
+		</tbody>
 	</table>
 @endsection
