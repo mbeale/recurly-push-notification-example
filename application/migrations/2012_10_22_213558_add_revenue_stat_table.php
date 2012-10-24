@@ -16,7 +16,7 @@ class Add_Revenue_Stat_Table {
 			$table->string('invoice_id');
 			$table->integer('invoice_number');
 			$table->string('subscription_id');
-			$table->float('amount');
+			$table->decimal('amount', 10, 2);
 			$table->date('transaction_date');
 			$table->timestamps();
 

@@ -10,6 +10,9 @@
 
     <!-- Le styles -->
     <?php echo Asset::styles(); ?>
+    {{HTML::style('default/recurly.css')}}
+    {{HTML::style('css/bootstrap.min.css')}}
+    {{HTML::style('css/main.css')}}
     <style>
       body {
         padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
@@ -40,14 +43,16 @@
             <span class="icon-bar"></span>
           </a>
           <a class="brand" href="#">Recurly Integration Samples</a>
-<!--           <div class="nav-collapse collapse">
+          <div class="nav-collapse collapse">
             <ul class="nav">
-              <li class="active"><a href="#">Home</a></li>
-              <li><a href="#about">About</a></li>
-              <li><a href="#contact">Contact</a></li>
+              <li class="active"><a href="{{URL::to('/')}}">Home</a></li>
+              <li><a href="{{URL::to('subscriptions')}}">Subscriptions</a></li>
+              <li><a href="{{URL::to('revenue')}}">Revenue</a></li>
+              <li><a href="{{URL::to('ambassador')}}">GetAmbassador</a></li>
+              <li><a href="{{URL::to('options')}}">Options</a></li>
             </ul>
           </div>
-  -->       </div>
+        </div>
       </div>
     </div>
 
@@ -62,5 +67,7 @@
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <?php echo Asset::scripts(); ?>
+    {{HTML::script('js/jquery-min.js')}}
+    {{HTML::script('js/bootstrap.min.js')}}
   </body>
 </html>

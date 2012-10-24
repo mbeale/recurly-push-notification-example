@@ -25,7 +25,7 @@
 				<td><span class="dmetric">{{$c_month}}</span></td>
 			</tr>	
 			<tr>
-				<td>Revenue</td>
+				<td>Revenue($)</td>
 				<td><span class="dmetric">{{$r_today}}</span></td>
 				<td><span class="dmetric">{{$r_week}}</span></td>
 				<td><span class="dmetric">{{$r_month}}</span></td>

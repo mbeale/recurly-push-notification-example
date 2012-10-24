@@ -34,10 +34,10 @@
 
 Route::get('/', function()
 {
-	Asset::add('bootstrapcss', 'css/bootstrap.min.css');
-	Asset::add('maincss', 'css/main.css');
-	Asset::add('bsjs', 'js/bootstrap.min.js');
-	Asset::add('jquery','js/jquery-min.js');
+	//Asset::add('bootstrapcss', 'css/bootstrap.min.css');
+	//Asset::add('maincss', 'css/main.css');
+	//Asset::add('bsjs', 'js/bootstrap.min.js');
+	//Asset::add('jquery','js/jquery-min.js');
 	//get stats
 	$today = date('Y-m-d');
 	$thisweeknum = date('W');
@@ -356,6 +356,9 @@ Route::get('signup', function(){
 	return View::make('recurly.signup')->with('signature',$signature)->with('referrer',$referrer);
 });
 
+Route::get('options', function(){
+	return View::make('options.options');
+});
 /*
 |--------------------------------------------------------------------------
 | Application 404 & 500 Error Handlers

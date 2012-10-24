@@ -29,7 +29,7 @@ class Add_Signup_Stat_Table {
 			$table->string('plan_code');
 			$table->string('plan_name');
 			$table->integer('quantity');
-			$table->float('amount');
+			$table->decimal('amount', 10, 2);
 			$table->date('activation_date');
 			$table->timestamps();
 		});
