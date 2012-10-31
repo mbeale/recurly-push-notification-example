@@ -32,68 +32,138 @@
 |
 */
 
-Route::get('/', function()
-{
-	//Asset::add('bootstrapcss', 'css/bootstrap.min.css');
-	//Asset::add('maincss', 'css/main.css');
-	//Asset::add('bsjs', 'js/bootstrap.min.js');
-	//Asset::add('jquery','js/jquery-min.js');
-	//get stats
-	$today = date('Y-m-d');
-	$thisweeknum = date('W');
-	$thismonthstart = date('Y-m-01');
-	$thismonthend = date('Y-m-t');
+Route::group(array('before'=>'auth'), function(){
+	Route::get('options', function(){
+		if (Request::ajax())
+		{
+			return Response::eloquent(Option::find('1'));
+		}
+		Asset::add('options','js/options.js');
+		$success = Session::Get('success');
+		$error = Session::Get('error');
+		return View::make('options.options')->with(array(
+			'success'    => $success,
+			'error'      => $error,
+			));
+	});
 
-	//find the start of week
-	$wkday = date('l');
-    switch($wkday) {
-        case 'Monday': $numDaysToMon = 0; break;
-        case 'Tuesday': $numDaysToMon = 1; break;
-        case 'Wednesday': $numDaysToMon = 2; break;
-        case 'Thursday': $numDaysToMon = 3; break;
-        case 'Friday': $numDaysToMon = 4; break;
-        case 'Saturday': $numDaysToMon = 5; break;
-        case 'Sunday': $numDaysToMon = 6; break;   
-    }
-    $monday = date('Y-m-d',mktime('0','0','0', date('m'), date('d')-$numDaysToMon, date('Y')));
-    //signup queries
-	$signups_today = SubscriptionHistory::where('type','=','new')->where('activity_date','>=',$today)->count();	
-	$signups_this_month = SubscriptionHistory::where('type','=','new')->where('activity_date','>=',$thismonthstart)->where('activity_date','<=',$thismonthend)->count();	
-	$signups_this_week = SubscriptionHistory::where('type','=','new')->where('activity_date','>=',$monday)->count();	
-	//cancellations
-	$cancelations_today = SubscriptionHistory::where('type','=','canceled')->where('activity_date','>=',$today)->count();	
-	$cancelations_this_month = SubscriptionHistory::where('type','=','canceled')->where('activity_date','>=',$thismonthstart)->where('activity_date','<=',$thismonthend)->count();	
-	$cancelations_this_week = SubscriptionHistory::where('type','=','canceled')->where('activity_date','>=',$monday)->count();	
-	//revenue
-	$revenue_today = Revenue::where('transaction_date','>=',$today)->sum('amount');	
-	$revenue_this_month = Revenue::where('transaction_date','>=',$thismonthstart)->where('transaction_date','<=',$thismonthend)->sum('amount');	
-	$revenue_this_week = Revenue::where('transaction_date','>=',$monday)->sum('amount');	
-	//check revenue for null values
-	if($revenue_this_month == null)
+	Route::post('options', function(){
+		$input = Input::all();
+		$o = Option::find('1');
+		if (isset($input['usepush']) && $input['usepush'] == 'Yes')
+		{
+			$o->activate_pn = true;
+			$o->basic_name = $input['basic_name'];
+			$o->basic_pass = $input['basic_pass'];
+		}
+		else
+		{
+			$o->activate_pn = false;
+			$o->basic_name = '';
+			$o->basic_pass = '';
+		}
+		$o->save();
+		return Redirect::to('options')->with('success','Your options have been successfully saved');
+	});
+
+	Route::get('ambassador', function(){
+		return View::make('ga.options');
+	});
+
+	Route::get('change-password', function(){
+		$message = Session::get('message');
+		return View::make('auth.change')->with('message',$message);
+	});
+
+	Route::post('change-password', function(){
+		$input = Input::all();
+		$rules = array(
+			'original'=> 'required',
+			'password' => 'required',
+			'confirmpassword' => 'required|same:password'
+			);
+
+		$validation = Validator::make($input, $rules);
+		if($validation->fails())
+		{
+			return Redirect::to('change-password')->with_errors($validation);
+		}
+		else
+		{
+			if(Hash::check($input['original'],Auth::user()->password))
+			{
+				$u = User::find(Auth::user()->id);
+				$u->password = Hash::make($input['password']);
+				$u->save();
+				return Redirect::to('/');
+			}
+			else
+			{
+				return Redirect::to('change-password')->with('message','Original Password does not match');
+			}
+		}
+	});
+
+	Route::get('/', function()
 	{
-		$revenue_this_month = 0;
-	}
-	if($revenue_this_week == null)
-	{
-		$revenue_this_week = 0;
-	}
-	if($revenue_today == null)
-	{
-		$revenue_today = 0;
-	}
-	//subtract refunds
-	return View::make('dashboard.dashboard', array(
-		'su_today'=>$signups_today,
-		'su_month' => $signups_this_month,
-		'su_week' => $signups_this_week,
-		'r_today'=>$revenue_today,
-		'r_month' => $revenue_this_month,
-		'r_week' => $revenue_this_week,
-		'c_today'=>$cancelations_today,
-		'c_month' => $cancelations_this_month,
-		'c_week' => $cancelations_this_week,
-		)
-	);
+		//get stats
+		$today = date('Y-m-d');
+		$thisweeknum = date('W');
+		$thismonthstart = date('Y-m-01');
+		$thismonthend = date('Y-m-t');
+
+		//find the start of week
+		$wkday = date('l');
+	    switch($wkday) {
+	        case 'Monday': $numDaysToMon = 0; break;
+	        case 'Tuesday': $numDaysToMon = 1; break;
+	        case 'Wednesday': $numDaysToMon = 2; break;
+	        case 'Thursday': $numDaysToMon = 3; break;
+	        case 'Friday': $numDaysToMon = 4; break;
+	        case 'Saturday': $numDaysToMon = 5; break;
+	        case 'Sunday': $numDaysToMon = 6; break;   
+	    }
+	    $monday = date('Y-m-d',mktime('0','0','0', date('m'), date('d')-$numDaysToMon, date('Y')));
+	    //signup queries
+		$signups_today = SubscriptionHistory::where('type','=','new')->where('activity_date','>=',$today)->count();	
+		$signups_this_month = SubscriptionHistory::where('type','=','new')->where('activity_date','>=',$thismonthstart)->where('activity_date','<=',$thismonthend)->count();	
+		$signups_this_week = SubscriptionHistory::where('type','=','new')->where('activity_date','>=',$monday)->count();	
+		//cancellations
+		$cancelations_today = SubscriptionHistory::where('type','=','canceled')->where('activity_date','>=',$today)->count();	
+		$cancelations_this_month = SubscriptionHistory::where('type','=','canceled')->where('activity_date','>=',$thismonthstart)->where('activity_date','<=',$thismonthend)->count();	
+		$cancelations_this_week = SubscriptionHistory::where('type','=','canceled')->where('activity_date','>=',$monday)->count();	
+		//revenue
+		$revenue_today = Revenue::where('transaction_date','>=',$today)->sum('amount');	
+		$revenue_this_month = Revenue::where('transaction_date','>=',$thismonthstart)->where('transaction_date','<=',$thismonthend)->sum('amount');	
+		$revenue_this_week = Revenue::where('transaction_date','>=',$monday)->sum('amount');	
+		//check revenue for null values
+		if($revenue_this_month == null)
+		{
+			$revenue_this_month = 0;
+		}
+		if($revenue_this_week == null)
+		{
+			$revenue_this_week = 0;
+		}
+		if($revenue_today == null)
+		{
+			$revenue_today = 0;
+		}
+		//subtract refunds
+		return View::make('dashboard.dashboard', array(
+			'su_today'=>$signups_today,
+			'su_month' => $signups_this_month,
+			'su_week' => $signups_this_week,
+			'r_today'=>$revenue_today,
+			'r_month' => $revenue_this_month,
+			'r_week' => $revenue_this_week,
+			'c_today'=>$cancelations_today,
+			'c_month' => $cancelations_this_month,
+			'c_week' => $cancelations_this_week,
+			)
+		);
+	});
+
 });
 
 Route::post('confirm/(:any?)', function($referrer = ''){
@@ -140,7 +210,7 @@ Route::post('confirm/(:any?)', function($referrer = ''){
 	return View::make('recurly.confirm')->with('response',$response);
 });
 
-Route::post('recurly-notification',function(){
+Route::post('recurly-notification',array('before' => 'postnotification'),function(){
 	//need to handle 
 	$post_xml = file_get_contents ("php://input");
 	$notification = new Recurly_PushNotification($post_xml);
@@ -356,8 +426,40 @@ Route::get('signup', function(){
 	return View::make('recurly.signup')->with('signature',$signature)->with('referrer',$referrer);
 });
 
-Route::get('options', function(){
-	return View::make('options.options');
+Route::get('logout', function(){
+	Auth::logout();
+	return View::make('auth.login')->with('message','You have been successfully logged out');
+});
+
+Route::get('login', function(){
+	$message = Session::get('message');	
+	return View::make('auth.login')->with('message',$message);
+});
+
+Route::post('login', function(){
+	$input= Input::all();
+	$rules = array(
+		'username' => 'required',
+		'password' => 'required'
+		);
+	$validation = Validator::make($input, $rules);
+	if($validation->fails())
+	{
+		return Redirect::to('login')->with_errors($validation)->with_input('only',array('username'));
+		//return View::make('auth.login')->with_errors($validation);
+	}
+	else
+	{
+		$creds = array('username'=>$input['username'], 'password'=> $input['password']);
+		if(Auth::attempt($creds))
+		{
+			return Redirect::to('/');
+		}
+		else
+		{
+			return Redirect::to('login')->with('message','Invalid login/password')->with_input('only',array('username'));
+		}
+	}
 });
 /*
 |--------------------------------------------------------------------------
@@ -433,4 +535,25 @@ Route::filter('csrf', function()
 Route::filter('auth', function()
 {
 	if (Auth::guest()) return Redirect::to('login');
+});
+
+Route::filter('postnotification', function()
+{
+	$u = Option::find('1');
+
+	if ($u->activate_pn == "1")
+	{
+		if($u->basic_name != '' && $_SERVER['PHP_AUTH_USER'] != $u->basic_name)
+		{
+			return Response::error('401');
+		}
+		else if($u->basic_pass != '' && $_SERVER['PHP_AUTH_PW'] != $u->basic_pass)
+		{
+			return Response::error('401');
+		}
+	}
+	else
+	{
+		return Response::error('403');
+	}
 });

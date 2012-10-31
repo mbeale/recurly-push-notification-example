@@ -62,6 +62,8 @@ Autoloader::map(array(
 	'Base_Controller' => path('app').'controllers/base.php',
 	'Referral' => path('app') . 'models/referrals.php',
 	'Revenue' => path('app') . 'models/revenues.php',
+	'User' => path('app') . 'models/users.php',
+	'Option' => path('app') . 'models/options.php',
 	'RawNotification' => path('app') . 'models/raw_notifications.php',
 	'SubscriptionHistory' => path('app') . 'models/subscription_history.php',
 	'Notification' => path('app') . 'models/notifications.php',
