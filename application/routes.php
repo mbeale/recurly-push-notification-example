@@ -545,15 +545,15 @@ Route::filter('postnotification', function()
 	{
 		if($u->basic_name != '' && $_SERVER['PHP_AUTH_USER'] != $u->basic_name)
 		{
-			return Response::error('401');
+			return Response::error('404');
 		}
 		else if($u->basic_pass != '' && $_SERVER['PHP_AUTH_PW'] != $u->basic_pass)
 		{
-			return Response::error('401');
+			return Response::error('404');
 		}
 	}
 	else
 	{
-		return Response::error('403');
+		return Response::error('404');
 	}
 });
