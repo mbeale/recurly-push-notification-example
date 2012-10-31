@@ -543,11 +543,11 @@ Route::filter('postnotification', function()
 
 	if ($u->activate_pn == "1")
 	{
-		if($u->basic_name != '' && $_SERVER['PHP_AUTH_USER'] != $u->basic_name)
+		if($u->basic_name != '' && (!isset($_SERVER['PHP_AUTH_USER']) || $_SERVER['PHP_AUTH_USER'] != $u->basic_name))
 		{
 			return Response::error('401');
 		}
-		else if($u->basic_pass != '' && $_SERVER['PHP_AUTH_PW'] != $u->basic_pass)
+		else if($u->basic_pass != '' && (!isset($_SERVER['PHP_AUTH_PW']) || $_SERVER['PHP_AUTH_PW'] != $u->basic_pass))
 		{
 			return Response::error('401');
 		}
