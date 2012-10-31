@@ -210,7 +210,7 @@ Route::post('confirm/(:any?)', function($referrer = ''){
 	return View::make('recurly.confirm')->with('response',$response);
 });
 
-Route::post('recurly-notification',array('before' => 'postnotification'),function(){
+Route::post('recurly-notification',array('before' => 'postnotification',function(){
 	//need to handle 
 	$post_xml = file_get_contents ("php://input");
 	$notification = new Recurly_PushNotification($post_xml);
@@ -409,7 +409,7 @@ Route::post('recurly-notification',array('before' => 'postnotification'),functio
 			//TODO: only possible scenario is that the canceled not failed to be received first, doubtful
 		}
 	}
-});
+}));
 
 Route::get('load-existing-subs',function(){
 	//go through existing subs and make sure that they are blanked out
