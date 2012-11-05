@@ -47,9 +47,9 @@
           <div class="nav-collapse collapse">
             <ul class="nav">
               <li class="{{Request::uri() == '/' ? 'active' : ''}}"><a href="{{URL::to('/')}}">Home</a></li>
-<!--               <li><a href="{{URL::to('subscriptions')}}">Subscriptions</a></li>
-              <li><a href="{{URL::to('revenue')}}">Revenue</a></li>
- -->              <li class="{{Request::uri() == 'ambassador' ? 'active' : ''}}"><a href="{{URL::to('ambassador')}}">GetAmbassador</a></li>
+              <li><a href="{{URL::to('subscriptions')}}">Subscriptions</a></li>
+              <!-- <li><a href="{{URL::to('revenue')}}">Revenue</a></li> -->
+              <!-- <li class="{{Request::uri() == 'ambassador' ? 'active' : ''}}"><a href="{{URL::to('ambassador')}}">GetAmbassador</a></li> -->
               <li class="{{Request::uri() == 'options' ? 'active' : ''}}"><a href="{{URL::to('options')}}">Options</a></li>
             </ul>
           </div>

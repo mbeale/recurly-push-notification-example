@@ -55,12 +55,16 @@ Route::group(array('before'=>'auth'), function(){
 			$o->activate_pn = true;
 			$o->basic_name = $input['basic_name'];
 			$o->basic_pass = $input['basic_pass'];
+			$o->recurly_public = $input['recurly_public'];
+			$o->recurly_private = $input['recurly_private'];
 		}
 		else
 		{
 			$o->activate_pn = false;
 			$o->basic_name = '';
 			$o->basic_pass = '';
+			$o->recurly_private = '';
+			$o->recurly_public = '';
 		}
 		$o->save();
 		return Redirect::to('options')->with('success','Your options have been successfully saved');
@@ -102,6 +106,19 @@ Route::group(array('before'=>'auth'), function(){
 				return Redirect::to('change-password')->with('message','Original Password does not match');
 			}
 		}
+	});
+
+	Route::get('subscriptions', function(){
+		Asset::add('subs','js/subscriptions.js');
+		return View::make('subscriptions.list');
+	});
+
+	Route::get('subscriptions/find/(:any)', function($uuid){
+		return Response::eloquent(SubscriptionHistory::where('uuid','=',$uuid)->order_by('activity_date','asc')->get());
+	});
+
+	Route::get('notifications/(:any)', function($id){
+		return Response::eloquent(RawNotification::find($id));
 	});
 
 	Route::get('/', function()
@@ -167,22 +184,24 @@ Route::group(array('before'=>'auth'), function(){
 });
 
 Route::post('confirm/(:any?)', function($referrer = ''){
+	$o = Option::find('1');
 	$img = '';
 	$email = '';
 	$response = '';
 	$uuid = '';
 	if($referrer != '')
 	{
-		Recurly_Client::$apiKey = 'fad7d9622a9a49489393d4139609f804';
+		/*
+		Recurly_Client::$apiKey = $o->recurly_public;
 		//get token
 		$sub = Recurly_js::fetch($_POST['recurly_token']);
 		$uuid = $sub->uuid;
 		//find account email
 		$account = $sub->account->get();
 		$email = $account->email;
-		$campaign_id = '447';
-		$username = 'recurly';
-		$api_key = '7b9ec5edff365fec5be8fd970c225c61';
+		$campaign_id = '';
+		$username = '';
+		$api_key = '';
 		$api_url = "https://getambassador.com/api/v2/$username/$api_key/xml/event/record";
 		$data = array( 
 			'email' => $email,
@@ -198,7 +217,7 @@ Route::post('confirm/(:any?)', function($referrer = ''){
 		curl_setopt($curl_handle, CURLOPT_POST, 1);
 		curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $data);
 		$response = curl_exec($curl_handle);
-		curl_close($curl_handle);  
+		curl_close($curl_handle);  */
 	}
 	//save sub uuid -> short_code/email combo
 	//save empty as well
@@ -211,6 +230,7 @@ Route::post('confirm/(:any?)', function($referrer = ''){
 });
 
 Route::post('recurly-notification',array('before' => 'postnotification',function(){
+	$o = Option::find('1');
 	//need to handle 
 	$post_xml = file_get_contents ("php://input");
 	$notification = new Recurly_PushNotification($post_xml);
@@ -234,10 +254,10 @@ Route::post('recurly-notification',array('before' => 'postnotification',function
 			}
 			else
 			{
-				$rev = $notification->transaction->amount_in_cents / 100.00;
-				$campaign_id = '447';
-				$username = 'recurly';
-				$api_key = '7b9ec5edff365fec5be8fd970c225c61';
+				/*$rev = $notification->transaction->amount_in_cents / 100.00;
+				$campaign_id = '';
+				$username = '';
+				$api_key = '';
 				$api_url = "https://getambassador.com/api/v2/$username/$api_key/xml/event/record";
 				$data = array( 
 					'email' => $r->email,
@@ -254,7 +274,7 @@ Route::post('recurly-notification',array('before' => 'postnotification',function
 				curl_setopt($curl_handle, CURLOPT_POST, 1);
 				curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $data);
 				$response = curl_exec($curl_handle);
-				curl_close($curl_handle);  
+				curl_close($curl_handle);  */
 			}
 		}
 		//add to revenue stats
@@ -419,8 +439,8 @@ Route::get('signup', function(){
 	Asset::add('jquery','js/jquery-min.js');
 	Asset::add('recurly.js','js/recurly.min.js');
 	Asset::add('default','default/recurly.css');
-	Recurly_js::$privateKey = 'e44b36f13c92465eb519d70e24b4054c';
-
+	$o = Option::find('1');
+	Recurly_js::$privateKey = $o->recurly_private;
 	$referrer = Input::get('referrer','');
 	$signature = Recurly_js::sign(array('account'=>array('account_code'=>'referral_' . rand()),'subscription' => array('plan_code' => 'instant','currency'=>'USD')));
 	return View::make('recurly.signup')->with('signature',$signature)->with('referrer',$referrer);
