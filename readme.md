@@ -1,7 +1,7 @@
 # [Recurly](http://recurly.com) Push Notification Examples)
 
-* Disclaimer *
-* This is for educational purposes only and not supported by Recurly *
+*Disclaimer*
+*This is for educational purposes only and not supported by Recurly*
 
 This project shows some examples on how to work with push notifications.  
 The examples so far show a dashboard example that collects the amount of new
