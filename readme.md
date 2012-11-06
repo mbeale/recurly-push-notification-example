@@ -1,6 +1,6 @@
-# [Recurly](http://recurly.com) Push Notification Examples)
+# [Recurly](http://recurly.com) Push Notification Examples
 
-*Disclaimer*
+*Disclaimer:*
 *This is for educational purposes only and not supported by Recurly*
 
 This project shows some examples on how to work with push notifications.  
